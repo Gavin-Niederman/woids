@@ -2,9 +2,10 @@ use std::{cell::RefCell, rc::Rc};
 
 use nalgebra::Vector2;
 
-const COHESION: f32 = 2.3;
-const SEPARATION: f32 = 1.6;
-const ALIGNMENT: f32 = 0.1;
+const COHESION: f32 = 0.4;
+const SEPARATION: f32 = 2.0;
+const ALIGNMENT: f32 = 0.02;
+const MAX_SPEED: f32 = 150.0;
 
 use super::Boid;
 
@@ -23,12 +24,13 @@ pub fn update_boids(boids: Rc<RefCell<Vec<Boid>>>, dt: f32) {
         new_velocity += cohesion(*boid, center_of_mass) * COHESION;
         new_velocity += separation(*boid, &boids_clone) * SEPARATION;
         new_velocity += alignment(*boid, &boids_clone) * ALIGNMENT;
+        boid.velocity = boid.velocity.normalize() * MAX_SPEED;
         boid.velocity += new_velocity;
         boid.position += boid.velocity * dt * 1.0;
 
         fn torus(x: f32) -> f32 {
             if x.abs() > 1.0 {
-                -x
+                -x + 0.01
             } else {
                 x
             }
@@ -49,8 +51,12 @@ pub fn cohesion(boid: Boid, center_of_mass: Vector2<f32>) -> nalgebra::Vector2<f
 pub fn separation(boid: Boid, boids: &[Boid]) -> nalgebra::Vector2<f32> {
     let mut separation = nalgebra::Vector2::new(0.0, 0.0);
     for other_boid in boids {
-        if nalgebra::distance(&boid.position, &other_boid.position) < 0.4 {
-            separation -= other_boid.position.coords - boid.position.coords;
+        let distance = nalgebra::distance(&boid.position, &other_boid.position);
+        if distance < 0.1 && distance > 0.0 {
+            let difference = boid.position.coords - other_boid.position.coords;
+            let mut difference = difference.normalize();
+            difference /= nalgebra::distance(&boid.position, &other_boid.position);
+            separation += difference;
         }
     }
     separation

@@ -13,7 +13,6 @@ pub struct Boid {
     pub velocity: Vector2<f32>,
 }
 
-
 pub fn initialize_boids() -> Vec<Boid> {
     let mut boids = Vec::new();
     for _ in 0..NUM_BOIDS {

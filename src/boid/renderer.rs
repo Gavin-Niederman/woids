@@ -90,9 +90,9 @@ impl BoidRenderer {
             .into_iter()
             .flat_map(|boid| {
                 [
-                    Vector2::new(0.1, -0.1),
-                    Vector2::new(0.0, 0.1),
-                    Vector2::new(-0.1, -0.1),
+                    Vector2::new(0.02, -0.05),
+                    Vector2::new(0.0, 0.05),
+                    Vector2::new(-0.02, -0.05),
                 ]
                 .map(|vert| (boid.rotation * vert) + boid.position.coords)
                 .map(|vert| BoidVertex {

@@ -3,8 +3,7 @@ mod renderer;
 
 use std::{cell::RefCell, rc::Rc, sync::Arc, time::Instant};
 
-use boid::{initialize_boids, sim::update_boids, Boid, NUM_BOIDS};
-use nalgebra::Rotation2;
+use boid::{initialize_boids, sim::update_boids, Boid};
 use pollster::FutureExt as _;
 use winit::{
     application::ApplicationHandler, dpi::LogicalSize, event::WindowEvent, event_loop::ControlFlow,
