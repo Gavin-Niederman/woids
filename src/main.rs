@@ -3,7 +3,7 @@ mod renderer;
 
 use std::{cell::RefCell, rc::Rc, sync::Arc, time::Instant};
 
-use boid::{sim::update_boids, Boid, NUM_BOIDS};
+use boid::{initialize_boids, sim::update_boids, Boid, NUM_BOIDS};
 use nalgebra::Rotation2;
 use pollster::FutureExt as _;
 use winit::{
@@ -32,10 +32,7 @@ impl<'a> ApplicationHandler for Handler<'a> {
                     )
                     .unwrap(),
             );
-            let boids = Rc::new(RefCell::new(vec![Boid {
-                position: [0.0; 2].into(),
-                rotation: Rotation2::identity(),
-            }; NUM_BOIDS as usize]));
+            let boids = Rc::new(RefCell::new(initialize_boids()));
             let renderer = renderer::Renderer::new(window.clone(), boids.clone())
                 .block_on()
                 .unwrap();
