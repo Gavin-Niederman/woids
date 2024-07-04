@@ -1,6 +1,6 @@
-use std::sync::Arc;
+use std::{cell::RefCell, rc::Rc, sync::Arc};
 
-use crate::boid_renderer::{Boid, BoidRenderer};
+use crate::boid::{renderer::BoidRenderer, Boid};
 
 pub struct Renderer<'a> {
     surface: wgpu::Surface<'a>,
@@ -12,7 +12,7 @@ pub struct Renderer<'a> {
 impl<'a> Renderer<'a> {
     pub async fn new(
         window: Arc<winit::window::Window>,
-        boids: Arc<Vec<Boid>>,
+        boids: Rc<RefCell<Vec<Boid>>>,
     ) -> Result<Self, wgpu::Error> {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
@@ -69,21 +69,11 @@ impl<'a> Renderer<'a> {
     }
 
     pub fn render(&mut self) {
-        self.boid_renderer.update();
-
         let frame = self.surface.get_current_texture().unwrap();
         let view = frame.texture.create_view(&Default::default());
-        let mut encoder = self
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("Test Pass Encoder"),
-            });
 
-        {
-            self.boid_renderer.encode(&mut encoder, &view);
-        }
-
-        self.queue.submit(std::iter::once(encoder.finish()));
+        self.boid_renderer
+            .render(&mut self.device, &mut self.queue, &view);
         frame.present();
     }
 }

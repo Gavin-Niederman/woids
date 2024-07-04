@@ -1,15 +1,14 @@
+mod boid;
 mod renderer;
-mod boid_renderer;
-mod boid_sim;
 
-use std::sync::Arc;
+use std::{cell::RefCell, rc::Rc, sync::Arc, time::Instant};
 
-use boid_renderer::Boid;
-use boid_sim::update_boids;
+use boid::{sim::update_boids, Boid, NUM_BOIDS};
 use nalgebra::Rotation2;
 use pollster::FutureExt as _;
 use winit::{
-    application::ApplicationHandler, dpi::LogicalSize, event::WindowEvent, window::Window,
+    application::ApplicationHandler, dpi::LogicalSize, event::WindowEvent, event_loop::ControlFlow,
+    window::Window,
 };
 
 pub enum Handler<'a> {
@@ -17,7 +16,8 @@ pub enum Handler<'a> {
     Running {
         renderer: renderer::Renderer<'a>,
         window: Arc<Window>,
-        boids: Arc<Vec<Boid>>,
+        boids: Rc<RefCell<Vec<Boid>>>,
+        last_time: Instant,
     },
 }
 impl<'a> ApplicationHandler for Handler<'a> {
@@ -32,9 +32,20 @@ impl<'a> ApplicationHandler for Handler<'a> {
                     )
                     .unwrap(),
             );
-            let boids = Arc::new(vec![Boid { position: [0.5; 2].into(), rotation: Rotation2::identity() }]);
-            let renderer = renderer::Renderer::new(window.clone(), boids.clone()).block_on().unwrap();
-            *self = Handler::Running { renderer, window, boids };
+            let boids = Rc::new(RefCell::new(vec![Boid {
+                position: [0.0; 2].into(),
+                rotation: Rotation2::identity(),
+            }; NUM_BOIDS as usize]));
+            let renderer = renderer::Renderer::new(window.clone(), boids.clone())
+                .block_on()
+                .unwrap();
+            let last_time = Instant::now();
+            *self = Handler::Running {
+                renderer,
+                window,
+                boids,
+                last_time,
+            };
         }
     }
     fn window_event(
@@ -43,7 +54,13 @@ impl<'a> ApplicationHandler for Handler<'a> {
         window_id: winit::window::WindowId,
         event: winit::event::WindowEvent,
     ) {
-        if let Handler::Running { renderer, window, boids } = self {
+        if let Handler::Running {
+            renderer,
+            window,
+            boids,
+            last_time,
+        } = self
+        {
             if window_id != window.id() {
                 return;
             }
@@ -53,14 +70,27 @@ impl<'a> ApplicationHandler for Handler<'a> {
                     event_loop.exit();
                 }
                 WindowEvent::RedrawRequested => {
-                    update_boids(boids.clone());
+                    update_boids(boids.clone(), last_time.elapsed().as_secs_f32());
                     renderer.render();
+                    *last_time = Instant::now();
                 }
                 WindowEvent::Resized(size) => {
                     renderer.resize(size);
                 }
                 _ => {}
             }
+        }
+    }
+    fn about_to_wait(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
+        event_loop.set_control_flow(ControlFlow::Poll);
+        if let Self::Running {
+            renderer: _,
+            window,
+            boids: _,
+            last_time: _,
+        } = self
+        {
+            window.request_redraw();
         }
     }
 }
