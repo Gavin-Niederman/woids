@@ -1,0 +1,11 @@
+[package]
+name = "woids"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bytemuck = { version = "1.16.1", features = ["derive"] }
+nalgebra = "0.33.0"
+pollster = "0.3.0"
+wgpu = "0.20.1"
+winit = { version = "0.30.1", features = ["wayland"] }
